@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game</title>
+    <style>
+        @keyframes neon {
+    0% {
+        text-shadow: 0 0 5px #fff, 0 0 10px #f00, 0 0 20px #f00, 0 0 40px #f00, 0 0 80px #f00, 0 0 90px #f00, 0 0 100px #f00, 0 0 150px #f00;
+    }
+    50% {
+        text-shadow: 0 0 5px #fff, 0 0 10px #0ff, 0 0 20px #0ff, 0 0 40px #0ff, 0 0 80px #0ff, 0 0 90px #0ff, 0 0 100px #0ff, 0 0 150px #0ff;
+    }
+    100% {
+        text-shadow: 0 0 5px #fff, 0 0 10px #0f0, 0 0 20px #0f0, 0 0 40px #0f0, 0 0 80px #0f0, 0 0 90px #0f0, 0 0 100px #0f0, 0 0 150px #0f0;
+    }
+}
+
+canvas {
+    border: 1px solid #fff; /* Modificato il bordo del canvas in bianco */
+    display: none;
+    margin: 20px auto;
+}
+
+body {
+    background-color: #000; /* Impostato il colore di sfondo in nero */
+    color: #fff; /* Modificato il colore del testo in bianco */
+}
+
+h1 {
+    color: #fff; /* Modificato il colore del titolo in bianco */
+    animation: neon 2s infinite alternate; /* Effetto neon */
+}
+
+#winnerMessage {
+    display: none;
+    font-size: 24px;
+    text-align: center;
+    color: #fff; /* Modificato il colore del testo in bianco */
+    animation: neon 2s infinite alternate; /* Effetto neon */
+}
+
+#goalMessage {
+    display: none;
+    font-size: 40px;
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff; /* Modificato il colore del testo in bianco */
+    animation: neon 2s infinite alternate; /* Effetto neon */
+}
+
+#pauseMenu {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(128, 128, 128, 0.8); /* Grigio con trasparenza */
+    padding: 20px;
+    border: 1px solid #888; /* Colore del bordo grigio */
+    text-align: center;
+}
+
+#pauseTitle {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #fff; /* Modificato il colore del testo in bianco */
+    animation: neon 2s infinite alternate; /* Effetto neon */
+}
+
+#resumeButton,
+#restartButton {
+    display: block;
+    margin: 10px auto;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+#startMenu {
+    display: block; /* Aggiunto il display block per renderlo visibile */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(128, 128, 128, 0.8); /* Grigio con trasparenza */
+    padding: 20px;
+    border: 1px solid #888; /* Colore del bordo grigio */
+    text-align: center;
+}
+
+#startMenuTitle {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: #fff; /* Modificato il colore del testo in bianco */
+    animation: neon 2s infinite alternate; /* Effetto neon */
+}
+
+#startVsBotButton,
+#startVsPlayerButton {
+    display: block;
+    margin: 10px auto;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+/* Per il testo disegnato nel canvas (nomi dei giocatori e punteggi) */
+.neon-text {
+    color: #fff; /* Impostato il colore di base in bianco */
+    animation: neon 2s infinite alternate; /* Effetto neon */
+}
+    </style>
+</head>
+<body>
+
+    <h1 align="center"> PONG GAME XTREME </h1>
+    <div id="startMenu">
+        <div id="startMenuTitle">Seleziona la modalità di gioco:</div>
+        <button id="startVsBotButton">1 vs Bot</button>
+        <button id="startVsPlayerButton">1 vs 1</button>
+    </div>
+    <canvas id="pongCanvas" width="800" height="400"></canvas>
+    <div id="winnerMessage"></div>
+    <div id="goalMessage"></div>
+    <div id="pauseMenu">
+        <div id="pauseTitle">Pausa</div>
+        <button id="resumeButton">Riprendi Partita</button>
+        <button id="restartButton">Ricomincia Partita</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("pongCanvas");
+        const context = canvas.getContext("2d");
+        const winnerMessage = document.getElementById("winnerMessage");
+        const goalMessage = document.getElementById("goalMessage");
+        const pauseMenu = document.getElementById("pauseMenu");
+        const pauseTitle = document.getElementById("pauseTitle");
+        const resumeButton = document.getElementById("resumeButton");
+        const restartButton = document.getElementById("restartButton");
+        const startMenu = document.getElementById("startMenu");
+        const startMenuTitle = document.getElementById("startMenuTitle");
+        const startVsBotButton = document.getElementById("startVsBotButton");
+        const startVsPlayerButton = document.getElementById("startVsPlayerButton");
+
+        let paddle1Y = canvas.height / 2 - 40;
+        let paddle2Y = canvas.height / 2 - 40;
+        let paddleWidth = 10;
+        let paddleHeight = 80;
+        let paddleSpeed = 8; // Aumentato la velocità delle barre
+
+        let ballX = canvas.width / 2;
+        let ballY = canvas.height / 2;
+        let ballSpeedX = 5;
+        let ballSpeedY = 5;
+        const maxBallSpeed = 10; // Aggiunto il limite di velocità della pallina
+
+        let player1Score = 0;
+        let player2Score = 0;
+
+        let player1Name;
+        let player2Name;
+        let singlePlayer; // Flag per indicare se è un giocatore singolo
+        let gameStarted = false; // Flag per indicare se la partita è iniziata
+
+        let paddle1Up = false;
+        let paddle1Down = false;
+        let paddle2Up = false;
+        let paddle2Down = false;
+
+        let gamePaused = false;
+        let goalBlocked = false;
+
+        document.addEventListener("keydown", handleKeyDown);
+        document.addEventListener("keyup", handleKeyUp);
+
+        resumeButton.addEventListener("click", resumeGame);
+        restartButton.addEventListener("click", restartGame);
+        startVsBotButton.addEventListener("click", () => startGameHandler(true));
+        startVsPlayerButton.addEventListener("click", () => startGameHandler(false));
+
+        function startGameHandler(isSinglePlayer = false) {
+            singlePlayer = isSinglePlayer;
+            startMenu.style.display = "none";
+            canvas.style.display = "block"; // Mostra l'area di gioco dopo aver selezionato la modalità di gioco
+            player1Name = prompt("Inserisci il nome del Giocatore 1:") || "Giocatore 1";
+            player2Name = singlePlayer ? "Bot" : prompt("Inserisci il nome del Giocatore 2:") || "Giocatore 2";
+
+            if (singlePlayer) {
+                // Se è un giocatore singolo, inizializza la posizione del bot
+                paddle2Y = canvas.height / 2 - paddleHeight / 2;
+            }
+
+            gameStarted = true; // Imposta il flag per indicare che la partita è iniziata
+        }
+
+        function handleKeyDown(event) {
+            if (!gameStarted) return; // Se la partita non è iniziata, ignora gli input
+            switch (event.key.toLowerCase()) {
+                case "w":
+                    if (!gamePaused && !goalBlocked) paddle1Up = true;
+                    break;
+                case "s":
+                    if (!gamePaused && !goalBlocked) paddle1Down = true;
+                    break;
+                case "arrowup":
+                    if (!gamePaused && !goalBlocked) paddle2Up = true;
+                    break;
+                case "arrowdown":
+                    if (!gamePaused && !goalBlocked) paddle2Down = true;
+                    break;
+                case "p":
+                    // Mostra il menù di pausa quando si preme "P"
+                    if (!gamePaused && !goalBlocked) {
+                        showPauseMenu();
+                    }
+                    break;
+            }
+        }
+
+        function handleKeyUp(event) {
+            if (!gameStarted) return; // Se la partita non è iniziata, ignora gli input
+            switch (event.key.toLowerCase()) {
+                case "w":
+                    paddle1Up = false;
+                    break;
+                case "s":
+                    paddle1Down = false;
+                    break;
+                case "arrowup":
+                    paddle2Up = false;
+                    break;
+                case "arrowdown":
+                    paddle2Down = false;
+                    break;
+            }
+        }
+
+        function update() {
+            if (!gameStarted || gamePaused || goalBlocked) return;
+            move();
+            checkCollision();
+            checkScore();
+            draw();
+        }
+
+        function move() {
+            if (paddle1Up && paddle1Y > 0) {
+                paddle1Y -= paddleSpeed;
+            } else if (paddle1Down && paddle1Y < canvas.height - paddleHeight) {
+                paddle1Y += paddleSpeed;
+            }
+
+            if (singlePlayer) {
+                // Movimento automatico del bot per il giocatore singolo
+                moveBot();
+            } else {
+                // Movimento del giocatore 2 (se presente)
+                if (paddle2Up && paddle2Y > 0) {
+                    paddle2Y -= paddleSpeed;
+                } else if (paddle2Down && paddle2Y < canvas.height - paddleHeight) {
+                    paddle2Y += paddleSpeed;
+                }
+            }
+
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+
+            if (ballY < 0 || ballY > canvas.height) {
+                ballSpeedY = -ballSpeedY;
+            }
+
+            // Limita la velocità della pallina
+            ballSpeedX = Math.min(Math.max(ballSpeedX, -maxBallSpeed), maxBallSpeed);
+            ballSpeedY = Math.min(Math.max(ballSpeedY, -maxBallSpeed), maxBallSpeed);
+        }
+
+        function moveBot() {
+            // Semplice implementazione del movimento del bot
+            const botSpeed = 6;
+            if (ballY < paddle2Y + paddleHeight / 2) {
+                paddle2Y -= botSpeed;
+            } else {
+                paddle2Y += botSpeed;
+            }
+
+            // Assicurati che il bot non esca dai limiti della canvas
+            paddle2Y = Math.max(0, Math.min(canvas.height - paddleHeight, paddle2Y));
+        }
+
+        function checkCollision() {
+            if (
+                (ballX < paddleWidth && ballY > paddle1Y && ballY < paddle1Y + paddleHeight) ||
+                (ballX > canvas.width - paddleWidth && ballY > paddle2Y && ballY < paddle2Y + paddleHeight)
+            ) {
+                // Aggiungi una componente casuale alla velocità della pallina dopo ogni rimbalzo
+                ballSpeedX = -ballSpeedX + Math.random() * 2 - 1;
+                ballSpeedY = ballSpeedY + Math.random() * 2 - 1;
+
+                // Aumenta temporaneamente la velocità della pallina quando colpisce una barra
+                ballSpeedX *= 1.5;
+                ballSpeedY *= 1.5;
+
+                // Se è un giocatore singolo, fai muovere la barra del bot
+                if (singlePlayer) {
+                    moveBot();
+                }
+            }
+        }
+
+        function checkScore() {
+            if (ballX < 0) {
+                player2Score++;
+                showGoalMessage();
+                goalBlocked = true;
+                setTimeout(() => {
+                    goalBlocked = false;
+                    resetGame();
+                }, 2000);
+            } else if (ballX > canvas.width) {
+                player1Score++;
+                showGoalMessage();
+                goalBlocked = true;
+                setTimeout(() => {
+                    goalBlocked = false;
+                    resetGame();
+                }, 2000);
+            }
+
+            if (player1Score === 10 || player2Score === 10) {
+                showWinner(player1Score === 10 ? player1Name : player2Name);
+            }
+        }
+
+        function resetBall() {
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            // Imposta una velocità iniziale più bassa
+            ballSpeedX = -2;
+            ballSpeedY = 2;
+        }
+
+        function showWinner(winner) {
+            canvas.style.display = "none";
+            winnerMessage.textContent = `Il vincitore è ${winner}!`;
+            winnerMessage.style.display = "block";
+        }
+
+        function showGoalMessage() {
+            goalMessage.textContent = "Goal!";
+            goalMessage.style.display = "block";
+        }
+
+        function resetGame() {
+            goalMessage.style.display = "none";
+            resetBall();
+        }
+
+        function draw() {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    context.fillStyle = "#fff"; // Modificato il colore delle barre e della pallina in bianco
+    context.fillRect(0, paddle1Y, paddleWidth, paddleHeight);
+    context.fillRect(canvas.width - paddleWidth, paddle2Y, paddleWidth, paddleHeight);
+
+    context.beginPath();
+    context.arc(ballX, ballY, 10, 0, Math.PI * 2);
+    context.fillStyle = "#fff"; // Modificato il colore della pallina in bianco
+    context.fill();
+    context.closePath();
+
+    context.font = "20px Arial";
+    context.fillStyle = "#fff"; // Modificato il colore del testo in bianco
+    context.fillText(`${player1Name}: ${player1Score}`, 20, 30);
+    context.fillText(`${player2Name}: ${player2Score}`, canvas.width - 150, 30);
+
+    if (gamePaused) {
+        context.fillStyle = "#fff"; // Modificato il colore del testo di pausa in bianco
+        context.font = "40px Arial";
+        context.fillText("Pausa", canvas.width / 2 - 50, canvas.height / 2 - 80);
+    }
+}
+
+
+        function gameLoop() {
+            update();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function showPauseMenu() {
+            gamePaused = true;
+            pauseMenu.style.display = "block";
+        }
+
+        function resumeGame() {
+            gamePaused = false;
+            pauseMenu.style.display = "none";
+        }
+
+        function restartGame() {
+            player1Score = 0;
+            player2Score = 0;
+            resetGame();
+            resumeGame();
+        }
+
+        // Nascondi l'area di gioco e il menù di pausa inizialmente
+        canvas.style.display = "none";
+        pauseMenu.style.display = "none";
+
+        gameLoop();
+    </script>
+</body>
+</html>
